@@ -20,8 +20,8 @@ fn main() {
 	defer {
 		spinner.stop()
 	}
-	for i in 0 .. 100 {
-		spinner.set_suffix(' fetching [${i}/100]')
+	for i in 0 .. 25 {
+		spinner.set_suffix(' fetching [${i}/25]')
 		time.sleep((100 + rand.intn(100)!) * time.millisecond)
 	}
 }
