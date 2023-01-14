@@ -16,13 +16,19 @@ pub:
 }
 
 pub struct SpinnerState {
-mut:
+pub mut:
 	line_above []string
 	line_below []string
 	prefix     string
 	suffix     string
 	paused     bool
 	stopped    bool
+}
+
+pub fn (s SpinnerState) clone() SpinnerState {
+	return SpinnerState{
+		...s
+	}
 }
 
 pub type SpinnerFrames = []rune | []string
@@ -105,6 +111,12 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 				}
 			}
 		}
+	}
+}
+
+pub fn (s Spinner) get_state() SpinnerState {
+	return rlock s.state {
+		s.state.clone()
 	}
 }
 
