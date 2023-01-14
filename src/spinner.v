@@ -17,10 +17,12 @@ pub:
 
 pub struct SpinnerState {
 mut:
-	prefix  string
-	suffix  string
-	paused  bool
-	stopped bool
+	line_above []string
+	line_below []string
+	prefix     string
+	suffix     string
+	paused     bool
+	stopped    bool
 }
 
 pub type SpinnerFrames = []rune | []string
@@ -58,7 +60,7 @@ pub fn new_spinner(config SpinnerConfig) Spinner {
 }
 
 fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
-	for i := 0; true; {
+	for i := 0; !state.stopped; {
 		select {
 			message := <-ch {
 				print_cb := match message.@type {
@@ -79,21 +81,28 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 					[]string { c.frames[i % c.frames.len] }
 				}
 
-				rlock state {
-					eprintln('${state.prefix}${frame}${state.suffix}')
+				mut lines_count := rlock state {
+					mut lines := []string{cap: 1 + state.line_above.len + state.line_below.len}
+					lines << state.line_above
+					lines << '${state.prefix}${frame}${state.suffix}'
+					lines << state.line_below
+
+					eprintln(lines.join_lines())
+					lines.len
 				}
 
 				time.sleep(c.interval)
 
-				if !state.stopped {
-					// term.clear_previous_line() for stderr
-					eprint('\r\x1b[1A\x1b[2K')
-					flush_stderr()
-				} else {
-					break
+				if state.stopped {
+					lines_count -= 1
 				}
 
-				i += 1
+				if lines_count > 0 {
+					// term.clear_previous_line() for stderr
+					eprint('\r\x1b[1A\x1b[2K'.repeat(lines_count))
+					flush_stderr()
+					i += 1
+				}
 			}
 		}
 	}
@@ -166,7 +175,21 @@ pub fn (s Spinner) eprintln(ss string) {
 	}
 }
 
-// mutate_state calls cb on the SpinnerState only if the spinner is not stoppep
+// set_line_above sets the line above the spinner
+pub fn (s Spinner) set_line_above(ss []string) {
+	s.mutate_state(fn [ss] (mut state SpinnerState) {
+		state.line_above = ss
+	})
+}
+
+// set_line_below sets the line below the spinner
+pub fn (s Spinner) set_line_below(ss []string) {
+	s.mutate_state(fn [ss] (mut state SpinnerState) {
+		state.line_below = ss
+	})
+}
+
+// mutate_state calls cb on the SpinnerState only if the spinner is not stopped
 //
 // it returns true if cb is called, and false otherwise
 fn (s Spinner) mutate_state(cb fn (mut SpinnerState)) bool {
