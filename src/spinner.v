@@ -87,20 +87,18 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 					[]string { c.frames[i % c.frames.len] }
 				}
 
-				lines_count := rlock state {
-					mut lines := []string{cap: 1 + state.line_above.len + state.line_below.len}
-					lines << state.line_above
-					lines << '${state.prefix}${frame}${state.suffix}'
-					lines << state.line_below
-
-					eprintln(lines.join_lines())
-					lines.len
+				mut lines := []string{cap: 1 + state.line_above.len + state.line_below.len}
+				lines << state.line_above
+				lines << rlock state {
+					'${state.prefix}${frame}${state.suffix}'
 				}
+				lines << state.line_below
+				eprintln(lines.join_lines())
 
 				time.sleep(c.interval)
 
 				// term.clear_previous_line() for stderr
-				eprint('\r\x1b[1A\x1b[2K'.repeat(lines_count))
+				eprint('\r\x1b[1A\x1b[2K'.repeat(lines.len))
 				flush_stderr()
 				i += 1
 			}
@@ -213,14 +211,15 @@ pub fn (s Spinner) set_line_below_at(i int, ss string) {
 //
 // it returns true if cb is called, and false otherwise
 fn (s Spinner) mutate_state(cb fn (mut SpinnerState)) bool {
-	lock s.state {
+	rlock s.state {
 		// don't do anything if the spinner already stopped
 		if s.state.stopped {
 			return false
 		}
-
-		cb(mut s.state)
 	}
 
-	return true
+	return lock s.state {
+		cb(mut s.state)
+		true
+	}
 }
