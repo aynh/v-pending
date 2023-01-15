@@ -194,10 +194,24 @@ pub fn (s Spinner) set_line_above(ss []string) {
 	})
 }
 
+// set_line_above_at sets the line above the spinner at specific index
+pub fn (s Spinner) set_line_above_at(i int, ss string) {
+	s.mutate_state(fn [i, ss] (mut state SpinnerState) {
+		state.line_above[i] = ss
+	})
+}
+
 // set_line_below sets the line below the spinner
 pub fn (s Spinner) set_line_below(ss []string) {
 	s.mutate_state(fn [ss] (mut state SpinnerState) {
 		state.line_below = ss
+	})
+}
+
+// set_line_below_at sets the line below the spinner at specific index
+pub fn (s Spinner) set_line_below_at(i int, ss string) {
+	s.mutate_state(fn [i, ss] (mut state SpinnerState) {
+		state.line_below[i] = ss
 	})
 }
 
