@@ -87,7 +87,7 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 					[]string { c.frames[i % c.frames.len] }
 				}
 
-				mut lines_count := rlock state {
+				lines_count := rlock state {
 					mut lines := []string{cap: 1 + state.line_above.len + state.line_below.len}
 					lines << state.line_above
 					lines << '${state.prefix}${frame}${state.suffix}'
@@ -99,16 +99,10 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 
 				time.sleep(c.interval)
 
-				if state.stopped {
-					lines_count -= 1
-				}
-
-				if lines_count > 0 {
-					// term.clear_previous_line() for stderr
-					eprint('\r\x1b[1A\x1b[2K'.repeat(lines_count))
-					flush_stderr()
-					i += 1
-				}
+				// term.clear_previous_line() for stderr
+				eprint('\r\x1b[1A\x1b[2K'.repeat(lines_count))
+				flush_stderr()
+				i += 1
 			}
 		}
 	}
