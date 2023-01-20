@@ -35,9 +35,14 @@ pub type SpinnerFrames = []rune | []string
 
 [params]
 pub struct SpinnerConfig {
-	frames        SpinnerFrames [required]
-	interval      time.Duration [required]
+	frames        SpinnerFrames            [required]
+	interval      time.Duration            [required]
+	map_frame     fn (frame string) string = default_map_frame
 	initial_state SpinnerState
+}
+
+fn default_map_frame(frame string) string {
+	return frame
 }
 
 struct SpinnerMessage {
@@ -82,10 +87,10 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 					continue
 				}
 
-				frame := match c.frames {
+				frame := c.map_frame(match c.frames {
 					[]rune { c.frames[i % c.frames.len].str() }
 					[]string { c.frames[i % c.frames.len] }
-				}
+				})
 
 				mut lines := []string{cap: 1 + state.line_above.len + state.line_below.len}
 				lines << state.line_above
