@@ -2,6 +2,7 @@ module pending
 
 import time
 
+// see [new_spinner](#new_spinner), [SpinnerConfig](#SpinnerConfig), [SpinnerState](#SpinnerState)
 [noinit]
 pub struct Spinner {
 	// the state of this Spinner
@@ -17,14 +18,23 @@ pub:
 
 pub struct SpinnerState {
 pub mut:
+	// newline separated strings printed ABOVE the spinner
 	line_above []string
+	// newline separated strings printed BELOW the spinner
 	line_below []string
-	prefix     string
-	suffix     string
-	paused     bool
-	stopped    bool
+	// string printed BEFORE the spinner in the same line
+	prefix string
+	// string printed AFTER the spinner in the same line
+	suffix string
+	// whether the spinner is paused
+	// paused spinner won't print anything
+	paused bool
+	// whether the spinner is stopped
+	// stopped spinner is unusable and can't be _restarted_
+	stopped bool
 }
 
+// clone clones this spinner state
 pub fn (s SpinnerState) clone() SpinnerState {
 	return SpinnerState{
 		...s
@@ -33,10 +43,13 @@ pub fn (s SpinnerState) clone() SpinnerState {
 
 pub type SpinnerFrames = []rune | []string
 
+// you can get some cool spinners [here](https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json)
 [params]
 pub struct SpinnerConfig {
-	frames        SpinnerFrames            [required]
-	interval      time.Duration            [required]
+	frames   SpinnerFrames [required]
+	interval time.Duration [required]
+	// used to map (read: modify) the frame before it gets printed
+	// by default it will print the frame as-is
 	map_frame     fn (frame string) string = default_map_frame
 	initial_state SpinnerState
 }
@@ -111,6 +124,7 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 	}
 }
 
+// get_state returns (a clone of) the current spinner state
 pub fn (s Spinner) get_state() SpinnerState {
 	return rlock s.state {
 		s.state.clone()
