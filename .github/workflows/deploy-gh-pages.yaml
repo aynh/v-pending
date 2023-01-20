@@ -1,0 +1,39 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: Aynh/setup-v@fix/deprecated-warning
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35
+        with:
+          files: src/*.v
+
+      - name: Build docs
+        run: |
+          v doc ./src -f html -o _docs
+          mv ./_docs/pending.html ./_docs/index.html
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ (github.event_name == 'workflow_dispatch') ||
+          (github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true') }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_docs
