@@ -70,7 +70,7 @@ enum SpinnerMessageType {
 
 // new_spinner creates a Spinner instance
 pub fn new_spinner(config SpinnerConfig) Spinner {
-	ch := chan SpinnerMessage{}
+	ch := chan SpinnerMessage{cap: 64}
 	shared state := SpinnerState{
 		...config.initial_state
 	}
@@ -84,7 +84,7 @@ pub fn new_spinner(config SpinnerConfig) Spinner {
 }
 
 fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
-	for i := 0; !state.stopped; {
+	for i := 0; true; {
 		select {
 			message := <-ch {
 				print_cb := match message.@type {
@@ -95,7 +95,9 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 				print_cb(message.content)
 			}
 			else {
-				if state.paused {
+				if state.stopped {
+					break
+				} else if state.paused {
 					time.sleep(c.interval)
 					continue
 				}
@@ -157,10 +159,10 @@ pub fn (s Spinner) stop() {
 		state.stopped = true
 	})
 	{
-		// close the channel
-		s.ch.close()
 		// wait until the spinner actually stops
 		s.handle.wait()
+		// close the channel
+		s.ch.close()
 	}
 }
 
