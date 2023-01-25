@@ -64,6 +64,14 @@ fn test_spinner_stop() {
 	}
 }
 
+fn test_spinner_stopped() {
+	spinner := new_test_spinner()
+	assert spinner.stopped() == false
+
+	spinner.stop()
+	assert spinner.stopped() == true
+}
+
 fn test_spinner_eprintln_println() {
 	spinner := new_test_spinner()
 	defer {
@@ -117,7 +125,7 @@ fn test_spinner_setters() {
 	spinner.set_suffix('suffix')
 	spinner.set_line_above(['1st line', ''])
 	spinner.set_line_above_at(1, '2nd line')
-	spinner.set_line_below(['1st line', '2nd line', 'last line'])
+	spinner.set_line_below(['1st line', '2nd line', ''])
 	spinner.set_line_below_at(-1, 'last line')
 	rlock spinner.state {
 		assert spinner.state.line_above == ['1st line', '2nd line']

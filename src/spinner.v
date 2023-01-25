@@ -166,6 +166,13 @@ pub fn (s Spinner) stop() {
 	}
 }
 
+// stopped returns true if the spinner is already stopped
+pub fn (s Spinner) stopped() bool {
+	return rlock s.state {
+		s.state.stopped
+	}
+}
+
 // set_prefix sets the prefix of the Spinner
 pub fn (s Spinner) set_prefix(ss string) {
 	s.mutate_state(fn [ss] (mut state SpinnerState) {
@@ -234,11 +241,9 @@ pub fn (s Spinner) set_line_below_at(i int, ss string) {
 //
 // it returns true if cb is called, and false otherwise
 fn (s Spinner) mutate_state(cb fn (mut SpinnerState)) bool {
-	rlock s.state {
-		// don't do anything if the spinner already stopped
-		if s.state.stopped {
-			return false
-		}
+	// don't do anything if the spinner already stopped
+	if s.stopped() {
+		return false
 	}
 
 	return lock s.state {
