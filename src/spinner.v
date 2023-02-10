@@ -48,10 +48,17 @@ pub type SpinnerFrames = []rune | []string
 pub struct SpinnerConfig {
 	frames   SpinnerFrames [required]
 	interval time.Duration [required]
+	// where to print the spinner
+	target SpinnerTarget = .stderr
 	// used to map (read: modify) the frame before it gets printed
 	// by default it will print the frame as-is
 	map_frame     fn (frame string) string = default_map_frame
 	initial_state SpinnerState
+}
+
+pub enum SpinnerTarget {
+	stdout
+	stderr
 }
 
 fn default_map_frame(frame string) string {
@@ -113,16 +120,37 @@ fn (c SpinnerConfig) start(shared state SpinnerState, ch chan SpinnerMessage) {
 					'${state.prefix}${frame}${state.suffix}'
 				}
 				lines << state.line_below
-				eprintln(lines.join_lines())
+
+				c.println(lines.join_lines())
 
 				time.sleep(c.interval)
 
-				// term.clear_previous_line() for stderr
-				eprint('\r\x1b[1A\x1b[2K'.repeat(lines.len))
-				flush_stderr()
+				c.clear_previous_line(lines.len)
 				i += 1
 			}
 		}
+	}
+}
+
+fn (c SpinnerConfig) clear_previous_line(count int) {
+	s := '\r\x1b[1A\x1b[2K'.repeat(count)
+	match c.target {
+		.stderr { eprint(s) }
+		.stdout { print(s) }
+	}
+}
+
+fn (c SpinnerConfig) println(s string) {
+	match c.target {
+		.stderr { eprintln(s) }
+		.stdout { println(s) }
+	}
+}
+
+fn (c SpinnerConfig) flush() {
+	match c.target {
+		.stderr { flush_stderr() }
+		.stdout { flush_stdout() }
 	}
 }
 
